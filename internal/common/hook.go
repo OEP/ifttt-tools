@@ -4,12 +4,15 @@ package common
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 const (
-	baseURL = "https://maker.ifttt.com/trigger/%s/with/key/%s"
+	baseURL    = "https://maker.ifttt.com/trigger/%s/with/key/%s"
+	retryCount = 3
 )
 
 func getBaseURL(event, key string) string {
@@ -46,14 +49,24 @@ func (c *iftttClient) TriggerSlice(event string, values []string) error {
 		formValues["value3"] = []string{values[3]}
 	}
 
-	resp, err := http.PostForm(targetURL, formValues)
-	if resp.StatusCode == 404 {
-		return fmt.Errorf("A 404 was issued; is IFTTT_KEY correct?")
+	for i := 0; i < retryCount; i++ {
+		log.Println("Sending maker event", event, "with values", values)
+		resp, err := http.PostForm(targetURL, formValues)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode == 200 {
+			return nil
+		} else if resp.StatusCode == 404 {
+			return fmt.Errorf("A 404 was issued; is IFTTT_KEY correct?")
+		} else if resp.StatusCode == 502 {
+			log.Printf("Got HTTP status %s, retrying...\n", resp.Status)
+			time.Sleep(5 * time.Second)
+		} else {
+			return fmt.Errorf("Unexpected status code: %s", resp.Status)
+		}
 	}
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("Unexpected status code: %s", resp.Status)
-	}
-	return err
+	return fmt.Errorf("Maximum retry count (%d) exceeded.", retryCount)
 }
 
 func NewIFTTTClient(cfg Config) IFTTTClient {
