@@ -21,7 +21,6 @@ func getBaseURL(event, key string) string {
 
 type IFTTTClient interface {
 	Trigger(event string, values ...string) error
-	TriggerSlice(event string, values []string) error
 }
 
 type iftttClient struct {
@@ -29,12 +28,8 @@ type iftttClient struct {
 }
 
 func (c *iftttClient) Trigger(event string, values ...string) error {
-	return c.TriggerSlice(event, values)
-}
-
-func (c *iftttClient) TriggerSlice(event string, values []string) error {
 	if len(values) > 3 {
-		return fmt.Errorf("TriggerSlice() accepts up to 3 values")
+		return fmt.Errorf("Trigger() accepts up to 3 values")
 	}
 	targetURL := getBaseURL(event, c.cfg.GetIFTTTKey())
 

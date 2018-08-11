@@ -35,7 +35,7 @@ func main() {
 	event := flag.Arg(0)
 	args := flag.Args()[1:]
 
-	err := client.TriggerSlice(event, args)
+	err := client.Trigger(event, args...)
 
 	if err != nil {
 		fmt.Println(err)
