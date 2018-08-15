@@ -15,6 +15,11 @@ const (
 	retryCount = 3
 )
 
+var retryStatusCodes = map[int]bool{
+	502: true,
+	504: true,
+}
+
 func getBaseURL(event, key string) string {
 	return fmt.Sprintf(baseURL, event, key)
 }
@@ -54,7 +59,7 @@ func (c *iftttClient) Trigger(event string, values ...string) error {
 			return nil
 		} else if resp.StatusCode == 404 {
 			return fmt.Errorf("A 404 was issued; is IFTTT_KEY correct?")
-		} else if resp.StatusCode == 502 {
+		} else if retryStatusCodes[resp.StatusCode] {
 			log.Printf("Got HTTP status %s, retrying...\n", resp.Status)
 			time.Sleep(5 * time.Second)
 		} else {
